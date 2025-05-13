@@ -140,7 +140,7 @@
 
         if (code && code.data) {
           const duckId = code.data.trim();
-          console.log("QR Code lido:", duckId); // debug
+          window.alert("QR Code lido:", duckId, code.data); // debug
           status.textContent = `Pato acertado: ${duckId}`;
 
           // Vibrar 300ms
