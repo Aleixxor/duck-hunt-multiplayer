@@ -41,9 +41,9 @@
       width: 200px;
     }
   </style>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 
 <body>
@@ -84,12 +84,13 @@
 
     // QR Code
     const url = location.href;
-    QRCode.toDataURL(url).then(url => {
-      const img = document.createElement('img');
-      img.src = url;
-      img.style.width = '120px';
-      document.getElementById('qrCode').appendChild(img);
-    });
+    new QRCode(document.getElementById("qrCode"), url);
+    // QRCode.toDataURL(url).then(url => {
+    //   const img = document.createElement('img');
+    //   img.src = url;
+    //   img.style.width = '120px';
+    //   document.getElementById('qrCode').appendChild(img);
+    // });
 
     // Ducks
     let ducks = {};
