@@ -138,9 +138,9 @@
         const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
         const code = jsQR(imageData.data, imageData.width, imageData.height);
 
-        if (code && code.data) {
-          const duckId = code.data.trim();
-          window.alert("QR Code lido:", duckId, code.data); // debug
+        if (code) {
+          const duckId = code;
+          window.alert("QR Code lido:", JSON.stringify(code)); // debug
           status.textContent = `Pato acertado: ${duckId}`;
 
           // Vibrar 300ms
