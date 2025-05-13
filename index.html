@@ -126,6 +126,8 @@
         correctLevel: QRCode.CorrectLevel.H
       });
 
+      console.log("Duck ID:", duck.id);
+
       const qrCtx = qrCanvas.querySelector('canvas');
       if (qrCtx) {
         ctx.drawImage(qrCtx, duck.x - 20, duck.y - 20, 100, 100);
