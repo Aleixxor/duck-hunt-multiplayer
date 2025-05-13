@@ -49,7 +49,7 @@
     const db = firebase.database();
 
     const params = new URLSearchParams(window.location.search);
-    const roomId = location.hash.slice(1);
+    const roomId = params.get('roomId');
 
     let playerId = null;
     let playerName = null;

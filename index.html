@@ -83,14 +83,8 @@
     canvas.height = window.innerHeight;
 
     // QR Code
-    const url = location.href;
+    const url = location.origin + location.pathname + 'arma' + `?roomId=${roomId}`;
     new QRCode(document.getElementById("qrCode"), url);
-    // QRCode.toDataURL(url).then(url => {
-    //   const img = document.createElement('img');
-    //   img.src = url;
-    //   img.style.width = '120px';
-    //   document.getElementById('qrCode').appendChild(img);
-    // });
 
     // Ducks
     let ducks = {};
