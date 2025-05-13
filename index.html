@@ -55,7 +55,6 @@
     </div>
   </div>
   <script>
-    // Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyA2Kg16v8P8mG8B-A_ndF1Xdgbyspq5UQ4",
       authDomain: "duck-hunt-70e38.firebaseapp.com",
@@ -68,7 +67,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Sala
     const roomId = location.hash.slice(1) || crypto.randomUUID();
     location.hash = roomId;
     const roomRef = db.ref(`rooms/${roomId}`);
@@ -76,17 +74,14 @@
     const hitsRef = roomRef.child('hits');
     const playersRef = roomRef.child('players');
 
-    // Canvas
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
-    // QR Code
     const url = location.origin + location.pathname + 'arma' + `?roomId=${roomId}`;
     new QRCode(document.getElementById("qrCode"), url);
 
-    // Ducks
     let ducks = {};
 
     function spawnDuck() {
@@ -103,6 +98,9 @@
 
     ducksRef.on('value', snap => {
       ducks = snap.val() || {};
+      if (Object.keys(ducks).length === 0) {
+        spawnDuck();
+      }
     });
 
     hitsRef.on('child_added', snap => {
@@ -114,6 +112,26 @@
       }
     });
 
+    function drawDuckWithQRCode(duck) {
+      ctx.fillStyle = 'brown';
+      ctx.beginPath();
+      ctx.ellipse(duck.x + 30, duck.y + 30, 60, 60, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      const qrCanvas = document.createElement('canvas');
+      new QRCode(qrCanvas, {
+        text: duck.id,
+        width: 100,
+        height: 100,
+        correctLevel: QRCode.CorrectLevel.H
+      });
+
+      const qrCtx = qrCanvas.querySelector('canvas');
+      if (qrCtx) {
+        ctx.drawImage(qrCtx, duck.x - 20, duck.y - 20, 100, 100);
+      }
+    }
+
     function updateGame() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       for (const id in ducks) {
@@ -124,23 +142,14 @@
         if (duck.x <= 0 || duck.x >= canvas.width - 60) duck.dx *= -1;
         if (duck.y <= 0 || duck.y >= canvas.height - 60) duck.dy *= -1;
 
-        ctx.fillStyle = 'brown';
-        ctx.beginPath();
-        ctx.ellipse(duck.x + 30, duck.y + 30, 30, 20, 0, 0, Math.PI * 2);
-        ctx.fill();
-
+        drawDuckWithQRCode(duck);
         ducksRef.child(duck.id).update({ x: duck.x, y: duck.y, dx: duck.dx, dy: duck.dy });
       }
       requestAnimationFrame(updateGame);
     }
 
-    setInterval(() => {
-      spawnDuck();
-    }, 3000);
-
     updateGame();
 
-    // Ranking
     playersRef.on('value', snap => {
       const list = document.getElementById('rankingList');
       list.innerHTML = '';
