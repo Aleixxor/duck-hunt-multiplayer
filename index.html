@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Duck Hunt QR</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: sans-serif;
+    }
+
+    #container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    canvas {
+      background: #cceeff;
+      display: block;
+    }
+
+    #qrCode {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      background: white;
+      padding: 5px;
+    }
+
+    #ranking {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: white;
+      padding: 10px;
+      width: 200px;
+    }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode"></script>
+</head>
+
+<body>
+  <div id="container">
+    <canvas id="game"></canvas>
+    <div id="qrCode"></div>
+    <div id="ranking"><strong>Ranking:</strong>
+      <ul id="rankingList"></ul>
+    </div>
+  </div>
+  <script>
+    // Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyA2Kg16v8P8mG8B-A_ndF1Xdgbyspq5UQ4",
+      authDomain: "duck-hunt-70e38.firebaseapp.com",
+      databaseURL: "https://duck-hunt-70e38-default-rtdb.firebaseio.com",
+      projectId: "duck-hunt-70e38",
+      storageBucket: "duck-hunt-70e38.firebasestorage.app",
+      messagingSenderId: "160593117252",
+      appId: "1:160593117252:web:dcc09a0df69e7308553c11"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Sala
+    const roomId = location.hash.slice(1) || crypto.randomUUID();
+    location.hash = roomId;
+    const roomRef = db.ref(`rooms/${roomId}`);
+    const ducksRef = roomRef.child('ducks');
+    const hitsRef = roomRef.child('hits');
+    const playersRef = roomRef.child('players');
+
+    // Canvas
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    // QR Code
+    const url = location.href;
+    QRCode.toDataURL(url).then(url => {
+      const img = document.createElement('img');
+      img.src = url;
+      img.style.width = '120px';
+      document.getElementById('qrCode').appendChild(img);
+    });
+
+    // Ducks
+    let ducks = {};
+
+    function spawnDuck() {
+      const id = 'duck-' + crypto.randomUUID();
+      const duck = {
+        id,
+        x: Math.random() * (canvas.width - 60),
+        y: Math.random() * (canvas.height - 60),
+        dx: Math.random() > 0.5 ? 2 : -2,
+        dy: Math.random() > 0.5 ? 1.5 : -1.5
+      };
+      ducksRef.child(id).set(duck);
+    }
+
+    ducksRef.on('value', snap => {
+      ducks = snap.val() || {};
+    });
+
+    hitsRef.on('child_added', snap => {
+      const hit = snap.val();
+      const duckId = hit.duckId;
+      if (ducks[duckId]) ducksRef.child(duckId).remove();
+      if (hit.playerId) {
+        playersRef.child(hit.playerId).transaction(score => (score || 0) + 1);
+      }
+    });
+
+    function updateGame() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const id in ducks) {
+        const duck = ducks[id];
+        duck.x += duck.dx;
+        duck.y += duck.dy;
+
+        if (duck.x <= 0 || duck.x >= canvas.width - 60) duck.dx *= -1;
+        if (duck.y <= 0 || duck.y >= canvas.height - 60) duck.dy *= -1;
+
+        ctx.fillStyle = 'brown';
+        ctx.beginPath();
+        ctx.ellipse(duck.x + 30, duck.y + 30, 30, 20, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ducksRef.child(duck.id).update({ x: duck.x, y: duck.y, dx: duck.dx, dy: duck.dy });
+      }
+      requestAnimationFrame(updateGame);
+    }
+
+    setInterval(() => {
+      spawnDuck();
+    }, 3000);
+
+    updateGame();
+
+    // Ranking
+    playersRef.on('value', snap => {
+      const list = document.getElementById('rankingList');
+      list.innerHTML = '';
+      const players = snap.val() || {};
+      const sorted = Object.entries(players).sort((a, b) => b[1] - a[1]);
+      for (const [name, score] of sorted) {
+        const li = document.createElement('li');
+        li.textContent = `${name}: ${score}`;
+        list.appendChild(li);
+      }
+    });
+  </script>
+</body>
+
+</html>

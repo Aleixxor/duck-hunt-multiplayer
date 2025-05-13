@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Arma</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      text-align: center;
+      background: #111;
+      color: white;
+      font-family: sans-serif;
+    }
+
+    #preview {
+      width: 90vw;
+      height: auto;
+      margin-top: 20px;
+      border: 2px solid #fff;
+    }
+
+    #status {
+      margin-top: 10px;
+    }
+  </style>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+</head>
+
+<body>
+  <h1>Duck Hunt - Arma</h1>
+  <video id="preview" autoplay></video>
+  <div id="status">Inicializando...</div>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyA2Kg16v8P8mG8B-A_ndF1Xdgbyspq5UQ4",
+      authDomain: "duck-hunt-70e38.firebaseapp.com",
+      databaseURL: "https://duck-hunt-70e38-default-rtdb.firebaseio.com",
+      projectId: "duck-hunt-70e38",
+      storageBucket: "duck-hunt-70e38.firebasestorage.app",
+      messagingSenderId: "160593117252",
+      appId: "1:160593117252:web:dcc09a0df69e7308553c11"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    const params = new URLSearchParams(window.location.search);
+    const roomId = location.hash.slice(1);
+
+    let playerId = null;
+    let playerName = null;
+
+    async function askName() {
+      playerName = prompt("Digite seu nome:");
+      if (!playerName) askName();
+      else {
+        playerId = playerName.replace(/[^a-z0-9]/gi, '_');
+        await firebase.database().ref(`rooms/${roomId}/players/${playerId}`).set(0);
+      }
+    }
+
+    askName();
+
+    const video = document.getElementById('preview');
+    const status = document.getElementById('status');
+
+    navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+      .then(stream => {
+        video.srcObject = stream;
+        video.setAttribute("playsinline", true);
+        requestAnimationFrame(tick);
+      });
+
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+
+    function tick() {
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        context.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+        if (code) {
+          const duckId = code.data;
+          status.textContent = `Pato acertado: ${duckId}`;
+
+          firebase.database().ref(`rooms/${roomId}/hits`).push({
+            duckId,
+            playerId,
+            timestamp: Date.now()
+          });
+
+          setTimeout(() => {
+            status.textContent = "Procurando alvo...";
+          }, 2000);
+        } else {
+          status.textContent = "Procurando alvo...";
+        }
+      }
+      requestAnimationFrame(tick);
+    }
+  </script>
+</body>
+
+</html>
